@@ -75,24 +75,63 @@ router.get("/character/:characterName", async (req, res, next) => {
 
 //로그인 상태 캐릭터 검색
 router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, next) => {
+  try {
     const { userId } = req.user;
     const { characterName } = req.params;
 
+    // 캐릭터 정보 조회
     const character = await prisma.character.findFirst({
-      where: { userId, characterName: characterName },
+      where: { characterName: characterName },
       select: {
+        userId: true,
         characterName: true,
         health: true,
         power: true,
         money: true,
       },
     });
+
+    // 캐릭터가 존재하는지 확인
     if (!character) {
       return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
     }
-    return res.status(200).json({ data: character });
+
+    // 다른사용자일 경우
+    if (character.userId !== userId) {
+      const { money, userId, ...delInfo } = character;
+      return res.status(200).json({ data: delInfo });
+    }
+
+    // 내캐릭터일 경우
+    const { userId: _, ...delUserId } = character;
+    return res.status(200).json({ data: delUserId });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "서버 오류가 발생했습니다." });
   }
-);
+});
+
+
+
+// router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, next) => {
+//     const { userId } = req.user;
+//     const { characterName } = req.params;
+
+//     const character = await prisma.character.findFirst({
+//       where: { userId, characterName: characterName },
+//       select: {
+//         characterName: true,
+//         health: true,
+//         power: true,
+//         money: true,
+//       },
+//     });
+//     if (!character) {
+//       return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
+//     }
+//     return res.status(200).json({ data: character });
+//   }
+// );
 
 //캐릭터 삭제
 router.delete("/character/:characterName", authMiddleware, async (req, res, next) => {
