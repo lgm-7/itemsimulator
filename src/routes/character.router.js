@@ -97,7 +97,7 @@ router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, ne
 
     // 다른사용자일 경우
     if (character.userId !== userId) {
-      const { money, userId, ...delInfo } = character;
+      const { money, userId, ...delInfo } = character;  //구조 분해 할당 문법
       return res.status(200).json({ data: delInfo });
     }
 
