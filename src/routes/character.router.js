@@ -111,28 +111,6 @@ router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, ne
   }
 });
 
-
-
-// router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, next) => {
-//     const { userId } = req.user;
-//     const { characterName } = req.params;
-
-//     const character = await prisma.character.findFirst({
-//       where: { userId, characterName: characterName },
-//       select: {
-//         characterName: true,
-//         health: true,
-//         power: true,
-//         money: true,
-//       },
-//     });
-//     if (!character) {
-//       return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
-//     }
-//     return res.status(200).json({ data: character });
-//   }
-// );
-
 //캐릭터 삭제
 router.delete("/character/:characterName", authMiddleware, async (req, res, next) => {
     const { userId } = req.user;
