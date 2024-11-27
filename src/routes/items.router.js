@@ -4,6 +4,7 @@ import authMiddleware from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
+//아이템 생성
 router.post('/create-item', async (req, res, next) => {
     const { itemName,itemStat,itemPrice } = req.body;
     const isExistitem = await prisma.items.findFirst({
@@ -25,13 +26,13 @@ router.post('/create-item', async (req, res, next) => {
     return res.status(201).json({ data: item });
   });
 
-
+//아이템 수정
   router.put('/update-item/:itmeId', async (req, res) => {
     const { itmeId } = req.params;
     const { itemName, itemStat } = req.body;
 
     try {
-        // 아이템이 존재하는지 확인
+        // 아이템 확인
         const existItem = await prisma.items.findUnique({
             where: { itemId: +itmeId },
         });
@@ -40,7 +41,6 @@ router.post('/create-item', async (req, res, next) => {
             return res.status(404).json({ message: '아이템을 찾을 수 없습니다.' });
         }
 
-        // 아이템 업데이트
         const updatedItem = await prisma.items.update({
             where: { itemId: +itmeId },
             data: {
@@ -56,6 +56,7 @@ router.post('/create-item', async (req, res, next) => {
     }
 });
 
+//아이템 조회
 router.get('/item', async (req, res, next) => {
     const item = await prisma.items.findMany({
       select: {

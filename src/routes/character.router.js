@@ -79,7 +79,6 @@ router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, ne
     const { userId } = req.user;
     const { characterName } = req.params;
 
-    // 캐릭터 정보 조회
     const character = await prisma.character.findFirst({
       where: { characterName: characterName },
       select: {
@@ -91,7 +90,7 @@ router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, ne
       },
     });
 
-    // 캐릭터가 존재하는지 확인
+    // 캐릭터 확인
     if (!character) {
       return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
     }
