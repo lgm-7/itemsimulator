@@ -27,14 +27,14 @@ router.post('/create-item', async (req, res, next) => {
   });
 
 //아이템 수정
-  router.put('/update-item/:itmeId', async (req, res) => {
-    const { itmeId } = req.params;
+  router.put('/update-item/:itemId', async (req, res) => {
+    const { itemId } = req.params;
     const { itemName, itemStat } = req.body;
 
     try {
         // 아이템 확인
         const existItem = await prisma.items.findUnique({
-            where: { itemId: +itmeId },
+            where: { itemId: +itemId },
         });
 
         if (!existItem) {
@@ -42,7 +42,7 @@ router.post('/create-item', async (req, res, next) => {
         }
 
         const updatedItem = await prisma.items.update({
-            where: { itemId: +itmeId },
+            where: { itemId: +itemId },
             data: {
                 itemName: itemName !== undefined ? itemName : existItem.itemName,
                 itemStat: itemStat !== undefined ? itemStat : existItem.itemStat,
@@ -85,5 +85,69 @@ router.get('/item/:itemId', async (req, res, next) => {
   
     return res.status(200).json({ data: item });
   });
+
+router.post('/buy/:characterId',authMiddleware,async(req,res,next)=>{
+  const { characterId } = req.params;
+    const character = await prisma.character.findUnique({
+      where: {
+        characterId: +characterId,
+      },
+    });
+   
+    const {itemId, count} = req.body
+    const item = await prisma.items.findUnique({
+      where: {
+        itemId: +itemId
+      }
+    })
+    if((item.itemPrice * count) > character.money){
+      return res.status(409).json({ message: '돈이 부족합니다.' });
+    }
+
+    // 이미 해당 itemId를 가지고 있는지 확인
+    // 가지고 있으면 count만 update
+    // 없으면 create
+  
+  const exitInventory = await prisma.characterInventory.findFirst({
+    where: {
+      itemId: +itemId,
+    },
+  });
+ if(!exitInventory){
+  const characterInventory = await prisma.characterInventory.create({
+    data: {
+      itemId:+itemId,
+      itemName: item.itemName,
+      count: count,
+      characterId:+characterId,
+    },
+  });
+
+
+    return res.status(201).json({ data: characterInventory})
+ }
+  
+  const updatedInventory = await prisma.characterInventory.update({
+      where: { 
+        characterInventoryId:exitInventory.characterInventoryId
+      },
+      data: {
+          count: exitInventory.count+count,
+          characterId:character.characterId
+      },     
+  });
+  await prisma.character.update({
+    where:{
+      characterId: character.characterId
+    },
+    data: {
+      money: character.money-(item.itemPrice * count)
+    }
+  })
+
+  return res.status(201).json({ data: updatedInventory });
+ 
+    
+}) 
 
 export default router;

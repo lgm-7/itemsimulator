@@ -75,7 +75,7 @@ router.post("/sign-in", async (req, res, next) => {
         userId: user.userId,
       },
       "custom-secret-key",
-      { expiresIn: '1h' }
+      { expiresIn: '1d' }
     );
 
     res.header("authorization", `Bearer ${token}`);

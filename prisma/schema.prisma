@@ -29,7 +29,8 @@ model Character {
   health Int @default(500) @map("health")
   power Int @default(100) @map("power")
   money Int @default(10000) @map("money")
-
+  
+  characterInventroy CharacterInventory[]
   user Users @relation(fields: [userId], references: [userId], onDelete: Cascade)
   @@map("Character")
 }
@@ -42,7 +43,6 @@ model Items {
   itemStat Json @map("itemStat")
   itemPrice Int @map("itemPrice")
 
-  exchange Exchange[]
   characterItem CharacterItem[]
   characterInventory CharacterInventory[]
   @@map("Items")
@@ -53,7 +53,9 @@ model CharacterInventory {
   itemId Int @map("itemId")
   itemName String @map("itemName")
   count Int @default(0) @map("count")
+  characterId Int @map("characterId")
 
+  character Character @relation(fields: [characterId], references: [characterId], onDelete:Cascade)
   item Items @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
   @@map("CharacterInventory")
 }
@@ -65,13 +67,4 @@ model CharacterItem {
 
   item Items @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
   @@map("CharacterItem")
-}
-
-model Exchange {
-  exchange Int @id @default(1) @map("exchange")
-  itemId Int @map("itemId")
-  count Int @default(0) @map("count")
-
-  item Items @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
-  @@map("Exchange")
 }
