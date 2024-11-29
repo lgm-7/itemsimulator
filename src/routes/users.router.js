@@ -10,7 +10,7 @@ const router = express.Router();
 router.post("/sign-up", async (req, res, next) => {
   try {
     const { id, password, passwordCheck } = req.body;
-
+    console.log(req.body)
     if (!id || !password || !passwordCheck) {
       return res.status(400).json({ message: "모든 필드를 입력해야 합니다." });
     }
