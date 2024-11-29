@@ -95,7 +95,7 @@ router.get("/loginCharacter/:characterName", authMiddleware, async (req, res, ne
       return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
     }
 
-    // 다른사용자일 경우
+    // 다른 유저일 경우
     if (character.userId !== userId) {
       const { money, userId, ...delInfo } = character;  //구조 분해 할당 문법
       return res.status(200).json({ data: delInfo });

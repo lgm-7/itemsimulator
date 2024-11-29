@@ -69,6 +69,7 @@ router.get('/item', async (req, res, next) => {
     return res.status(200).json({ data: item });
   });
 
+//아이템 상세조회
 router.get('/item/:itemId', async (req, res, next) => {
     const { itemId } = req.params;
     const item = await prisma.items.findFirst({
@@ -82,10 +83,14 @@ router.get('/item/:itemId', async (req, res, next) => {
         itemPrice: true
       },
     });
+    if (!item) {
+      return res.status(404).json({ message: '아이템을 찾을 수 없습니다.' });
+  }
   
     return res.status(200).json({ data: item });
   });
 
+//아이템 구매
 router.post('/buy/:characterId',authMiddleware,async(req,res,next)=>{
   const { characterId } = req.params;
     const character = await prisma.character.findUnique({
@@ -93,7 +98,10 @@ router.post('/buy/:characterId',authMiddleware,async(req,res,next)=>{
         characterId: +characterId,
       },
     });
-   
+    if (!character) {
+      return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
+    }
+
     const {itemId, count} = req.body
     const item = await prisma.items.findUnique({
       where: {
@@ -108,12 +116,13 @@ router.post('/buy/:characterId',authMiddleware,async(req,res,next)=>{
     // 가지고 있으면 count만 update
     // 없으면 create
   
-  const exitInventory = await prisma.characterInventory.findFirst({
+  const inventoryTable = await prisma.characterInventory.findFirst({
     where: {
       itemId: +itemId,
+      characterId: +characterId
     },
   });
- if(!exitInventory){
+ if(!inventoryTable){
   const characterInventory = await prisma.characterInventory.create({
     data: {
       itemId:+itemId,
@@ -122,17 +131,24 @@ router.post('/buy/:characterId',authMiddleware,async(req,res,next)=>{
       characterId:+characterId,
     },
   });
-
+  await prisma.character.update({
+    where:{
+      characterId: character.characterId
+    },
+    data: {
+      money: character.money-(item.itemPrice * count)
+    }
+  })
 
     return res.status(201).json({ data: characterInventory})
  }
   
   const updatedInventory = await prisma.characterInventory.update({
       where: { 
-        characterInventoryId:exitInventory.characterInventoryId
+        characterInventoryId:inventoryTable.characterInventoryId
       },
       data: {
-          count: exitInventory.count+count,
+          count: inventoryTable.count+count,
           characterId:character.characterId
       },     
   });
@@ -145,9 +161,98 @@ router.post('/buy/:characterId',authMiddleware,async(req,res,next)=>{
     }
   })
 
-  return res.status(201).json({ data: updatedInventory });
+  return res.status(200).json({ data: updatedInventory });
  
     
-}) 
+})
+
+//아이템 판매
+router.post('/sell/:characterId', authMiddleware, async (req, res, next) => {
+  const { characterId } = req.params;
+  const character = await prisma.character.findUnique({
+    where: {
+      characterId: +characterId,
+    },
+  });
+  if (!character) {
+    return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
+  }
+
+  const { itemId, count } = req.body;
+  const item = await prisma.items.findUnique({
+    where: {
+      itemId: +itemId,
+    },
+  });
+
+  const inventoryTable = await prisma.characterInventory.findFirst({
+    where: {
+      characterId: +characterId,
+      itemId: +itemId,
+    },
+  });
+
+  if (!inventoryTable || inventoryTable.count < count) {
+    return res.status(409).json({ message: '판매할 수량이 부족합니다.' });
+  }
+
+  const salePrice = item.itemPrice/100 * 60 * count;
+
+  if (inventoryTable.count === count) {
+    
+    await prisma.characterInventory.delete({
+      where: {
+        characterInventoryId: inventoryTable.characterInventoryId,
+      },
+    });
+  } else {
+    
+    await prisma.characterInventory.update({
+      where: {
+        characterInventoryId: inventoryTable.characterInventoryId,
+      },
+      data: {
+        count: inventoryTable.count - count,
+      },
+    });
+  }
+
+  await prisma.character.update({
+    where: {
+      characterId: character.characterId,
+    },
+    data: {
+      money: character.money + salePrice,
+    },
+  });
+
+  return res.status(200).json({ message: '아이템이 성공적으로 판매되었습니다.' });
+});
+
+router.get('/inventoryItem/:characterId',authMiddleware, async(req, res, next)=>{
+ const {characterId} = req.params
+ const character = await prisma.character.findUnique({
+  where:{
+  characterId: +characterId
+  },
+ });
+ 
+ if (!character) {
+  return res.status(404).json({ error: "캐릭터를 찾을 수 없습니다." });
+}
+
+const inventoryTable = await prisma.characterInventory.findMany({
+  where: {
+    characterId: +characterId,
+  },
+  select: {
+    itemId: true,
+    itemName: true,
+    count: true
+  }
+});
+
+return res.status(200).json({dage:inventoryTable})
+});
 
 export default router;
